@@ -5,8 +5,9 @@ audio embedding을 text embedding dimension으로 변환
 **✅ audio 전처리 과정 정의**
 
 1. 전체 audio mel-spectrogram을 5개로 나누기 → 나눈 후에 label이 등장하지 않는 segment는 버리기
-   ▶️ UnAV-100 dataset은 vggsound dataset과는 다르게 총 video의 길이가 모두 다릅니다. 따라서 아래 순서에 따라 전처리를 진행하였습니다.
-   
+  
+▶️ UnAV-100 dataset은 vggsound dataset과는 다르게 총 video의 길이가 모두 다름. 따라서 아래 순서에 따라 전처리 진행  
+
     1) 원본 video로부터 audio 추출(raw audio)
     
     2) 하나의 raw audio(각각 다른 길이) → 10초 길이의 audio로 split
