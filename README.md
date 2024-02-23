@@ -18,3 +18,10 @@ audio embedding을 text embedding dimension으로 변환
   
     4) annotation.json과 비교했을 때, 생성된 2초 segment 중에서 label에 해당하는 소리가 등장하지 않는 segment는 버리기
       -  train 과정에서의 input은 label에 해당하는 소리가 등장하는 segment들만 가지고 학습
+
+
+## Run
+```
+$ cd audio_encoder
+$ python3 train_audio_text.py
+```
