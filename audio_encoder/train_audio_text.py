@@ -114,7 +114,7 @@ if __name__ == "__main__":
             map_optimizer.zero_grad()
 
             map_result = map_model(audio_embedding.clone().unsqueeze(1)) # text embedding과 유사해지게 차원 조정
-            # print(f'MLP 통과 후: {map_result.shape}')
+            print(f'MLP 통과 후: {map_result.shape}')
 
             loss = 0
             loss_list = []
