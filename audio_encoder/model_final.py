@@ -1,3 +1,5 @@
+""" audio encoder, text encoder, MLP 정의 """
+
 import torch 
 import timm
 import clip # 1024로 바꾸기 위해
@@ -9,6 +11,7 @@ from tqdm import tqdm
 
 import json
 
+# Text Encoder
 class FrozenCLIPTextEmbedder(torch.nn.Module):
     """
     Uses the CLIP transformer encoder for text.
@@ -51,20 +54,21 @@ def disabled_train(self, mode=True):
     return self
 
 
-    
+# load annotations
 def load_annotations(json_file):
     with open(json_file, 'r') as f:
         annotations = json.load(f)
     return annotations
 
 
-
+# annotations.json에 'label'을 활용해서 뽑아낸 다음
 def process_annotations(annotations, clip_text_embedder):
     for video_id, video_info in tqdm(annotations['database'].items(), desc="Processing GT annotations"):
         for annotation in video_info['annotations']:
             start_time, end_time = annotation['segment']
             label = annotation['label']
             text_description = label 
+            # text embedding 추출
             text_embedding = clip_text_embedder.encode(text_description)
             # print(f'Label: {label}, Embedding: {text_embedding.shape}') # 어느 동영상에 해당되는 label인지도 알 수 있게 코드 수정
     
@@ -117,6 +121,7 @@ class Mapping_Model(nn.Module):
         return self.act(self.drop(self.linear2(self.act(self.drop(self.linear1(x)))))).reshape(x.shape[0],self.max_length,768)
 '''   
 
+# MLP
 class Mapping_Model(nn.Module):
     def __init__(self, sequence_length=77, input_dim=1024, output_dim=1024):
         super().__init__()
