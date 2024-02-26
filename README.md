@@ -8,7 +8,8 @@ audio embedding을 text embedding dimension으로 변환
 ▶️ UnAV-100 dataset은 vggsound dataset과는 다르게 총 video의 길이가 모두 다름. 따라서 아래 순서에 따라 전처리 진행  
 
     1) 원본 video로부터 audio 추출(raw audio)
-      - extract_audio.py
+      - extract_audio.py  
+      
     2) 하나의 raw audio(각각 다른 길이) → 10초 길이의 audio로 split
       - ex) 48s → 10s * 4 + 8s
       - 이때 위 예시에서 8초와 같이 10초가 되지 않는 분할된 audio에 대해서는 padding 적용 → 똑같이 10초로 맞춰줌
