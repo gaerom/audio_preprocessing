@@ -152,6 +152,17 @@ class Audio_Encoder(nn.Module):
         self.final_linear = nn.Linear(self.feature_extractor.num_features, 1024)
         self.softmax = nn.Softmax(dim=1)
 
+        self.freeze_parameters()
+
+    def freeze_parameters(self):
+        # feature_extractor의 모든 parameter를 frozen
+        for param in self.feature_extractor.parameters():
+            param.requires_grad = False
+
+        for param in self.final_linear.parameters():
+            param.requires_grad = False
+
+
     def forward(self, x):
         x = x.view(-1, 1, x.size(2), x.size(3))
         x = self.conv(x)
