@@ -78,14 +78,16 @@ if __name__ == "__main__":
         num_workers=args.num_workers,
         pin_memory=True)
 
-    
+    # Audio Encoder
     audioencoder = Audio_Encoder(batch_size = args.batch_size, ngpus = torch.cuda.device_count())
     # audioencoder = AudioCLIP() # __init__ default로
     audioencoder = nn.DataParallel(audioencoder).to(device)
+    # MLP
     map_model = Mapping_Model()
     map_model = nn.DataParallel(map_model).to(device)
     mse_loss = torch.nn.MSELoss()
-    clip_1024 = FrozenCLIPTextEmbedder() # annotation에 있는 text label을 encode하기 위해 사용
+    # Text Encoder
+    clip_1024 = FrozenCLIPTextEmbedder() # annotation에 있는 text label을 encode하기 위해 사용 
     optimizer = optim.SGD(audioencoder.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
     map_optimizer = optim.Adam(map_model.parameters(), lr=args.lr)
     scheduler = optim.lr_scheduler.CyclicLR(optimizer, base_lr=0.001, max_lr=0.1, step_size_up=5, mode="triangular")
