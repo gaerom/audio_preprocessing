@@ -5,7 +5,6 @@ import glob
 import librosa
 import librosa.display
 
-import simplejpeg
 import numpy as np
 
 import torch
@@ -42,17 +41,10 @@ aclp.eval() # 어차피 audio encoder를 학습시키는게 아니니까
 
 audio_transforms = ToTensor1D() # audio feature를 1D tensor로 변환하기 위한 것, 왜..? -> 일단 pytorch에서 다루기 쉽게 만들기 위해서
 
-image_transforms = tv.transforms.Compose([ 
-    tv.transforms.ToTensor(),
-    tv.transforms.Resize(IMAGE_SIZE, interpolation=Image.BICUBIC),
-    tv.transforms.CenterCrop(IMAGE_SIZE),
-    tv.transforms.Normalize(IMAGE_MEAN, IMAGE_STD)
-])
-
 
 # demo/audio/*.wav (5개)
-paths_to_audio = glob.glob('./vggsound/raw_audios/*.wav') # audio input은 .wav / vggsound data로 경로 수정
-paths_to_audio_segments = glob.glob('/home/broiron/Desktop/AudioCLIP/demo/vggsound/segments/*.wav')
+#paths_to_audio = glob.glob('./vggsound/raw_audios/*.wav') # audio input은 .wav / vggsound data로 경로 수정
+paths_to_audio_segments = glob.glob('./vggsound/segments/*.wav')
 
 audio = list()
 audio_data = {}
@@ -73,8 +65,10 @@ all_audio_features = []
 for i, (video_id, segments) in enumerate(audio_data.items()):
     for segment in segments:
         audio_sample = segment.unsqueeze(0)
+        print(f'통과 전 shape: {audio_sample.shape}') # (1, 1, 88200)
         # audio encoder 통과
-        ((audio_features, _, _), _), _ = aclp(audio=audio_sample)
+        with torch.no_grad():
+            ((audio_features, _, _), _), _ = aclp(audio=audio_sample)
         print(f'encoder 통과한 audio feature shape {i+1}: {audio_features.shape}')
         all_audio_features.append(audio_features.squeeze(0)) 
 
@@ -107,3 +101,13 @@ print(text_features.shape)
 #     query = f'{os.path.basename(path):>30s} ->\t\t'
 #     results = ', '.join([f'{LABELS[i]:>15s} ({v:06.2%})' for v, i in zip(conf_values, ids)])
 #     print(query + results)
+
+
+
+"""
+1. audio encoder를 통과 시켰음 -> audio embedding 차원 확인 완료
+
+
+2. text encoder(CLIP text encoder)로 text embedding 뽑아야 함
+3. 1, 2 사이의 MSE 적용해야 함
+"""
