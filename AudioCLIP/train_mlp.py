@@ -1,3 +1,10 @@
+"""
+1. vggsound dataset(일단 sample로 5개만 사용): raw audio(10s, .wav 형식) -> segment(2s, .wav 형식)
+2. 각각의 segment -> audio encoder를 통과 시킴. 이때 차원은 [1, 1024]
+2-1. text encoder(CLIP text encoder)로 text embedding 뽑음. 이때 차원은 [1, 77, 1024]
+3. 2, 2-1 사이에 MSE를 적용 -> audio embedding[1, 1024]가 MLP를 거쳤을 때 text embedding[1, 77, 1024]가 되도록
+"""
+
 import os
 import sys
 import glob
@@ -6,14 +13,11 @@ import librosa
 import librosa.display
 
 import numpy as np
+from tqdm import tqdm
 
 import torch
-import torchvision as tv
-
-import matplotlib.pyplot as plt
-
-from PIL import Image
-from IPython.display import Audio, display
+import torch.nn as nn
+import torch.optim as optim
 
 sys.path.append(os.path.abspath(f'{os.getcwd()}/..'))
 
@@ -21,12 +25,33 @@ from model import AudioCLIP # audio encoder
 from model.model_final import FrozenCLIPTextEmbedder # text encoder
 from utils.transforms import ToTensor1D
 
-
-torch.set_grad_enabled(False)
+torch.set_grad_enabled(True)
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
+max_length = 77
+input_dim = 1024
+output_dim = 1024
+epochs = 50
+
+class Mapping_Model(nn.Module):
+    def __init__(self, input_dim=1024, output_dim=1024, max_length=77):
+        super().__init__()
+        self.linear1 = nn.Linear(input_dim, output_dim * 2)  
+        self.linear2 = nn.Linear(output_dim * 2, output_dim * max_length) 
+        self.act = nn.ReLU()  
+        self.drop = nn.Dropout(0.1)
+        
+    def forward(self, x):
+        x = self.drop(self.act(self.linear1(x)))
+        x = self.linear2(x)
+        return x.view(-1, max_length, output_dim) 
+
+model = Mapping_Model(input_dim, output_dim, max_length).to(device)
+loss_function = nn.MSELoss()
+optimizer = optim.Adam(model.parameters(), lr=0.001)
+
+
 MODEL_FILENAME = 'AudioCLIP-Full-Training.pt'
-# derived from ESResNeXt
 SAMPLE_RATE = 44100 # 초당 44100개의 sample을 사용하여 audio signal을 디지털화
 
 # UnAV-100 annotation과 같은 것(VGGSound/data/Common.txt에 있는 label과 동일)
@@ -39,7 +64,8 @@ audio_encoder.eval() # 어차피 audio encoder를 학습시키는게 아니니�
 # text encoder
 text_encoder = FrozenCLIPTextEmbedder(version='RN50', device=device)
 
-#paths_to_audio = glob.glob('./vggsound/raw_audios/*.wav') # audio input은 .wav / vggsound data로 경로 수정
+#paths_to_audio = glob.glob('./vggsound/raw_audios/*.wav')
+# 아래 경로는 각각의 10초 raw audio를 2초 segment로 잘라서 저장해놓은 경로
 paths_to_audio_segments = glob.glob('./vggsound/segments/*.wav')
 
 audio = list()
@@ -56,9 +82,9 @@ for path in paths_to_audio_segments:
     else:
         audio_data[video_id].append(transformed_track)
 
+print(device)
 
 all_audio_features = [] 
-
 for i, (video_id, segments) in enumerate(audio_data.items()):
     for segment in segments:
         audio_sample = segment.unsqueeze(0)
@@ -73,35 +99,35 @@ all_audio_features = torch.stack(all_audio_features)
 
 # text = [[label] for label in LABELS] 
 for i in LABELS:
-    text_features = text_encoder.encode(i)
+    text_features = text_encoder.encode(i) # LABEL이 text encoder 통과
     print(f'Text embedding shape(GT): {text_features.shape}')  # (1, 77, 1024)
 
 
 """ Audio embedding과 Text embedding MSE 적용"""
+model.train()
+for epoch in tqdm(range(epochs), desc='Training: '):
+    total_loss = 0
+    for i, audio_feature in enumerate(all_audio_features):
+        audio_feature = audio_feature.unsqueeze(0).to(device).float()  # [1, 1024]
+        
+        # GT text embedding
+        label = LABELS[i % len(LABELS)]  # 일단 순환적으로 레이블 사용 -> 근본적인 의문: 각각의 embedding segment에 대해 어떤 text embedding이 매칭 관계에 있는지 어떻게 정의하지..?
+        text_feature = text_encoder.encode([label]).to(device).float()  # [1, 77, 1024]
+        
+        optimizer.zero_grad()
+        # audio embedding -> MLP에 전달
+        audio_output = model(audio_feature)  # [1, 77, 1024]
+        
+        # MSE 계산
+        loss = loss_function(audio_output, text_feature)
+        loss.backward()
+        optimizer.step()
+        
+        total_loss += loss.item()
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        print(f'MLP 통과 후 embedding shape: {audio_output.shape}')
+    
+    print(f'Epoch {epoch+1}, Loss: {total_loss / len(all_audio_features)}')
 
 
 
@@ -126,14 +152,3 @@ for i in LABELS:
 #     query = f'{os.path.basename(path):>30s} ->\t\t'
 #     results = ', '.join([f'{LABELS[i]:>15s} ({v:06.2%})' for v, i in zip(conf_values, ids)])
 #     print(query + results)
-
-
-
-"""
-1. audio encoder를 통과 시켰음 -> audio embedding 차원 확인 완료
-2. text encoder(CLIP text encoder)로 text embedding 뽑아야 함
-
-
-
-3. 1, 2 사이의 MSE 적용해야 함
-"""
