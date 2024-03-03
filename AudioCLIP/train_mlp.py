@@ -23,6 +23,8 @@ sys.path.append(os.path.abspath(f'{os.getcwd()}/..'))
 
 from model import AudioCLIP # audio encoder
 from model.model_final import FrozenCLIPTextEmbedder # text encoder
+
+
 from utils.transforms import ToTensor1D
 
 torch.set_grad_enabled(True)
@@ -54,7 +56,8 @@ optimizer = optim.Adam(model.parameters(), lr=0.001)
 MODEL_FILENAME = 'AudioCLIP-Full-Training.pt'
 SAMPLE_RATE = 44100 # 초당 44100개의 sample을 사용하여 audio signal을 디지털화
 
-# UnAV-100 annotation과 같은 것(VGGSound/data/Common.txt에 있는 label과 동일)
+# UnAV-100 annotation과 같은 역할(VGGSound/data/Common.txt에 있는 label과 동일)
+# segment 순서대로(?)
 LABELS = ['beat boxing', 'cat purring', 'cattle, bovinae cowbell', 'fire truck siren', 'playing violin, fiddle'] # vggsound sample audio에 해당하는 label
 
 # audio encoder
@@ -128,7 +131,6 @@ for epoch in tqdm(range(epochs), desc='Training: '):
         print(f'MLP 통과 후 embedding shape: {audio_output.shape}')
     
     print(f'Epoch {epoch+1}, Loss: {total_loss / len(all_audio_features)}')
-
 
 
 
