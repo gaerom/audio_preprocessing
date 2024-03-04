@@ -110,7 +110,12 @@ for i, (video_id, segments) in tqdm(enumerate(audio_data.items()), desc='Audio p
 all_audio_features = torch.stack(all_audio_features)
 
 # Dataloader
-train_dataloader = DataLoader(dataset, batch_size=4, shuffle=True, num_workers=4)
+train_dataloader = DataLoader(dataset, 
+                              batch_size=4, 
+                              shuffle=True, 
+                              num_workers=4)
+
+
 
 """ Audio embedding과 Text embedding MSE 적용"""
 patience = 20
