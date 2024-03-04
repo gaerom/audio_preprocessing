@@ -132,25 +132,3 @@ for epoch in tqdm(range(epochs), desc='Training: '):
     
     print(f'Epoch {epoch+1}, Loss: {total_loss / len(all_audio_features)}')
 
-
-
-
-
-# ### Normalize Embedding
-# all_audio_features = all_audio_features / torch.linalg.norm(all_audio_features, dim=-1, keepdim=True)
-# text_features = text_features / torch.linalg.norm(text_features, dim=-1, keepdim=True)
-
-# ### Similarity 계산
-# scale_audio_text = torch.clamp(aclp.logit_scale_at.exp(), min=1.0, max=100.0)
-# logits_audio_text = scale_audio_text * all_audio_features @ text_features.T
-
-# # Audio Classification
-# confidence = logits_audio_text.softmax(dim=1)
-
-# # 출력 부분 수정
-# print('\t\tFilename, Audio\t\t\tTextual Label (Confidence)', end='\n\n')
-# for audio_idx, path in enumerate(paths_to_audio_segments):
-#     conf_values, ids = confidence[audio_idx].topk(3)
-#     query = f'{os.path.basename(path):>30s} ->\t\t'
-#     results = ', '.join([f'{LABELS[i]:>15s} ({v:06.2%})' for v, i in zip(conf_values, ids)])
-#     print(query + results)
