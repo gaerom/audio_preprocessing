@@ -34,7 +34,7 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 max_length = 77
 input_dim = 1024
 output_dim = 1024
-epochs = 50
+epochs = 20
 
 class Mapping_Model(nn.Module):
     def __init__(self, input_dim=1024, output_dim=1024, max_length=77):
@@ -55,10 +55,8 @@ optimizer = optim.Adam(model.parameters(), lr=0.001)
 
 
 MODEL_FILENAME = 'AudioCLIP-Full-Training.pt'
-SAMPLE_RATE = 44100 # 초당 44100개의 sample을 사용하여 audio signal을 디지털화
+SAMPLE_RATE = 44100 
 
-# UnAV-100 annotation과 같은 역할(VGGSound/data/Common.txt에 있는 label과 동일)
-# LABELS = ['beat boxing', 'cat purring', 'cattle, bovinae cowbell', 'fire truck siren', 'playing violin, fiddle'] # vggsound sample audio에 해당하는 label
 
 # audio encoder
 audio_encoder = AudioCLIP(pretrained=f'../assets/{MODEL_FILENAME}')
@@ -70,11 +68,11 @@ text_encoder = FrozenCLIPTextEmbedder(version='RN50', device=device)
 #paths_to_audio = glob.glob('./vggsound/raw_audios/*.wav')
 # 아래 경로는 각각의 10초 raw audio를 2초 segment로 잘라서 저장해놓은 경로
 # 40만개는 load하다가 process 죽음 -> segments_2_val: 38,430개
-audio_segments_path = '/home/broiron/Desktop/AudioCLIP/data/segments_2_val/*.wav' # 여기에 2초짜리 audio segment(.wa)
+audio_segments_path = '/home/broiron/Desktop/AudioCLIP/data/test_2/*.wav' # 여기에 2초짜리 audio segment(.wav)
 
 audio = list()
 audio_data = {}
-audio_transforms = ToTensor1D() # audio feature를 1D tensor로 변환하기 위한 것, 왜..? -> 일단 pytorch에서 다루기 쉽게 만들기 위해서
+audio_transforms = ToTensor1D()
 for path in tqdm(glob.glob(audio_segments_path), desc='Audio loading: '):
     video_id = '_'.join(path.split('/')[-1].split('_')[:-2])
     track, _ = librosa.load(path, sr=SAMPLE_RATE, dtype=np.float32)
@@ -85,7 +83,6 @@ for path in tqdm(glob.glob(audio_segments_path), desc='Audio loading: '):
     else:
         audio_data[video_id].append(transformed_track)
 
-print(device)
 
 # Load labels from file
 labels_path = '/home/broiron/Desktop/AudioCLIP/data/label/labels.txt'
@@ -94,7 +91,7 @@ with open(labels_path, 'r') as file:
 
 all_audio_features = [] 
 for i, (video_id, segments) in tqdm(enumerate(audio_data.items()), desc='Audio processing: '):
-    for segment in tqdm(segments, desc='Encoder 통과 중: '):
+    for segment in segments:
         audio_sample = segment.unsqueeze(0)
         # print(f'통과 전 audio feature shape: {audio_sample.shape}') # (1, 1, 88200)
         # audio encoder 통과
@@ -104,6 +101,7 @@ for i, (video_id, segments) in tqdm(enumerate(audio_data.items()), desc='Audio p
         all_audio_features.append(audio_features.squeeze(0)) 
 
 all_audio_features = torch.stack(all_audio_features)
+
 
 
 """ Audio embedding과 Text embedding MSE 적용"""
@@ -119,7 +117,7 @@ for epoch in tqdm(range(epochs), desc='Training: '):
         audio_feature = audio_feature.unsqueeze(0).to(device).float()
         
         # Match each audio feature with its corresponding text label
-        label = labels[i % len(labels)]  # Cycle through labels if not directly mapped
+        label = labels[i % len(labels)]  
         text_embedding = text_encoder.encode([label]).to(device).float()
         # print(f'Text embedding shape(GT): {text_embedding.shape}')
         
