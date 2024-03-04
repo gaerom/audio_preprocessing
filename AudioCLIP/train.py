@@ -94,13 +94,13 @@ with open(labels_path, 'r') as file:
 
 all_audio_features = [] 
 for i, (video_id, segments) in tqdm(enumerate(audio_data.items()), desc='Audio processing: '):
-    for segment in segments:
+    for segment in tqdm(segments, desc='Encoder 통과 중: '):
         audio_sample = segment.unsqueeze(0)
-        print(f'통과 전 audio feature shape: {audio_sample.shape}') # (1, 1, 88200)
+        # print(f'통과 전 audio feature shape: {audio_sample.shape}') # (1, 1, 88200)
         # audio encoder 통과
         with torch.no_grad():
             ((audio_features, _, _), _), _ = audio_encoder(audio=audio_sample)
-        print(f'encoder 통과한 audio embedding shape {i+1}: {audio_features.shape}')
+        # print(f'encoder 통과한 audio embedding shape {i+1}: {audio_features.shape}')
         all_audio_features.append(audio_features.squeeze(0)) 
 
 all_audio_features = torch.stack(all_audio_features)
@@ -119,10 +119,9 @@ for epoch in tqdm(range(epochs), desc='Training: '):
         audio_feature = audio_feature.unsqueeze(0).to(device).float()
         
         # Match each audio feature with its corresponding text label
-        label = labels[i % len(labels)]  
-        # 이렇게 matching하는게 맞나..?
+        label = labels[i % len(labels)]  # Cycle through labels if not directly mapped
         text_embedding = text_encoder.encode([label]).to(device).float()
-        print(f'Text embedding shape(GT): {text_embedding.shape}')
+        # print(f'Text embedding shape(GT): {text_embedding.shape}')
         
         optimizer.zero_grad()
         audio_output = model(audio_feature)
