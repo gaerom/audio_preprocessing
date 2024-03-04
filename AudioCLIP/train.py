@@ -69,7 +69,8 @@ text_encoder = FrozenCLIPTextEmbedder(version='RN50', device=device)
 
 #paths_to_audio = glob.glob('./vggsound/raw_audios/*.wav')
 # 아래 경로는 각각의 10초 raw audio를 2초 segment로 잘라서 저장해놓은 경로
-audio_segments_path = '/home/broiron/Desktop/AudioCLIP/data/segments_2/*.wav' # 경로 수정
+# 40만개는 load하다가 process 죽음 -> segments_2_val: 38,430개
+audio_segments_path = '/home/broiron/Desktop/AudioCLIP/data/segments_2_val/*.wav' # 여기에 2초짜리 audio segment(.wa)
 
 audio = list()
 audio_data = {}
