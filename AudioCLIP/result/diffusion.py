@@ -39,26 +39,25 @@ for audio_file in audio_data:
 
 # embedding 저장
 all_mlp_embeddings_array = np.array(embeddings)
+embeddings_tensor = torch.from_numpy(all_mlp_embeddings_array).float() # embedding -> tensor로 변환
+embeddings_tensor = embeddings_tensor.to(device)
 
 # disk에 저장
 # embeddings_path = '/embedding 저장 경로/embeddings.npy'
 # np.save(embeddings_path, all_mlp_embeddings_array)
+
 
 """ input dim [1, 77, 1024]를 갖는 diffusion model과 연결 """
 """ prerequisite """
 # pip install diffusers transformers accelerate scipy safetensors
  
 model_id = "stabilityai/stable-diffusion-2-1-base" # hugging face model id
-
 scheduler = EulerDiscreteScheduler.from_pretrained(model_id, subfolder="scheduler")
+
+# 수정해야 함 -> embedding을 구하지 않고 그냥 return할 수 있도록(__call__ 수정 완료)
 pipe = StableDiffusionPipeline.from_pretrained(model_id, scheduler=scheduler, torch_dtype=torch.float16)
 pipe = pipe.to("cuda")
 
-
-
-
-
-model_id = "stabilityai/stable-diffusion-2-1-base"
 
 # text 관련은 필요 없음
 # text = ""
@@ -66,16 +65,12 @@ model_id = "stabilityai/stable-diffusion-2-1-base"
 # tokenizer = AutoTokenizer.from_pretrained(model_id, subfolder="tokenizer", use_fast=False,)
 # text_encoder = CLIPTextModel.from_pretrained(model_id, subfolder="text_encoder")
 
-image_processor = CLIPImageProcessor.from_pretrained(model_id, subfolder="feature_extractor")
-image_encoder = CLIPVisionModel.from_pretrained("laion/CLIP-ViT-H-14-laion2B-s32B-b79K")
 
 # text -> 대신에 뽑아낸 embedding
 # text_inputs = tokenizer(["a photo of a cat"], max_length=tokenizer.model_max_length, padding="max_length", truncation=True, return_tensors="pt")
-input  = all_mlp_embeddings_array
+# input  = all_mlp_embeddings_array
 # text_features = text_encoder(**text_inputs)  
-print(f'shape: {all_mlp_embeddings_array.shape}')  # [1, 77, 1024]
+# print(f'shape: {all_mlp_embeddings_array.shape}')  # [1, 77, 1024]
 
-# image
-image_inputs = image_processor(images=image, return_tensors="pt")
-image_features = image_encoder(**image_inputs)    # [1, 257, 1280]
-print(image_features.last_hidden_state.shape)
+generated_images = pipe(prompt_embeds=embeddings_tensor) # error 날거임
+generated_images.save('결과 저장해/.png')
