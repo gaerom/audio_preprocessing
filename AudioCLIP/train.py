@@ -119,7 +119,8 @@ for epoch in tqdm(range(epochs), desc='Training: '):
         audio_feature = audio_feature.unsqueeze(0).to(device).float()
         
         # Match each audio feature with its corresponding text label
-        label = labels[i % len(labels)]  # Cycle through labels if not directly mapped
+        label = labels[i % len(labels)]  
+        # 이렇게 matching하는게 맞나..?
         text_embedding = text_encoder.encode([label]).to(device).float()
         print(f'Text embedding shape(GT): {text_embedding.shape}')
         
