@@ -1,4 +1,4 @@
-### prerequisite
+### Prerequisite
 ```
 pip install diffusers transformers accelerate scipy safetensors
 ```
